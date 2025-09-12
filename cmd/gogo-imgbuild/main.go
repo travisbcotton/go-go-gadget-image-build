@@ -3,8 +3,8 @@ package main
 import (
     "fmt"
 
-    "github.com/travisbcotton/go-go-gadget-image-build/internal/drivers/rpm"
-    "github.com/travisbcotton/go-go-gadget-image-build/pkg/format"
+    "github.com/travisbcotton/go-go-gadget-image-build/internal/bootstrap/rpm"
+    "github.com/travisbcotton/go-go-gadget-image-build/pkg/bootstrap"
 )
 
 func main() {

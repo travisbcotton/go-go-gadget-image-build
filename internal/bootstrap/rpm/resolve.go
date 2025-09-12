@@ -5,7 +5,7 @@ import (
     "time"
     "errors"
     "net/http"
-    "github.com/travisbcotton/go-go-gadget-image-build/pkg/format"
+    "github.com/travisbcotton/go-go-gadget-image-build/pkg/bootstrap"
 )
 
 type RPM struct {

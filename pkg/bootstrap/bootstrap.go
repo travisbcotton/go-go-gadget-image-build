@@ -1,4 +1,4 @@
-package format
+package bootstrap
 
 type FetchRequest struct {
     Repos    []string
