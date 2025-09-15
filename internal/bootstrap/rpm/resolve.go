@@ -56,6 +56,7 @@ type entry struct {
     Epoch      int
     Ver, Rel   string
     Href       string
+    BaseURL    string
 }
 
 func NewRepodataResolver(repos []bootstrap.Repo) *RepodataResolver {
@@ -65,43 +66,105 @@ func NewRepodataResolver(repos []bootstrap.Repo) *RepodataResolver {
     }
 }
 
-func (r *RepodataResolver) Resolve(s bootstrap.Spec) (bootstrap.Match, error) {
-    if isURL(s.Raw) && strings.HasSuffix(s.Raw, ".rpm") {
-        f := path.Base(s.Raw)
-        n, arch := parseNevrArchFromFilename(f)
-        return bootstrap.Match{Name: n.name, EVR: evrString(n), Arch: arch, URL: s.Raw, File: f}, nil
+func (r *RepodataResolver) Resolve(specs bootstrap.Spec) ([]bootstrap.Match, error) {
+    var best_matches []bootstrap.Match
+    // process packages in URL format
+    for _, s := range specs.Raw {
+        if isURL(s) && strings.HasSuffix(s, ".rpm") {
+            f := path.Base(s)
+            n, arch := parseNevrArchFromFilename(f)
+            best_matches = append(best_matches, bootstrap.Match{
+                Name: n.name, 
+                EVR: evrString(n), 
+                Arch: arch, 
+                URL: s, 
+                File: f,
+            })
+        }
     }
-
-    var best *bootstrap.Match
+    // search through all repos to get repodata.xml metadata, compile list of packages
+    var compiled_entries []entry
     for _, repo := range r.Repos {
         primaryURL, err := r.findPrimaryXML(repo.BaseURL)
         if err != nil { continue }
-        entries, err := r.loadPrimary(primaryURL)
+        baseurl := repo.BaseURL
+        entries, err := r.loadPrimary(primaryURL, baseurl)
         if err != nil { continue }
+        compiled_entries = append(compiled_entries, entries...)
+    }
+    //Find best match in all compiled entries
+    for _, s := range specs.Raw {
+        best, err := findBest(compiled_entries, s)
+        if err != nil {
+            fmt.Println("package ", s, "not found")
+        }
+        best_matches = append(best_matches, best)
+    }
+    return best_matches, nil
+}
 
-        for _, e := range entries {
-            if repo.Arch != "" && e.Arch != repo.Arch { continue }
-            if strings.HasSuffix(s.Raw, ".rpm") {
-                ok, _ := path.Match(s.Raw, path.Base(e.Href))
-                if !ok { continue }
-            } else {
-                if e.Name != s.Raw { continue }
-            }
-            m := bootstrap.Match{
-                Name: e.Name,
-                EVR:  fmt.Sprintf("%d:%s-%s", e.Epoch, e.Ver, e.Rel),
-                Arch: e.Arch,
-                Href: e.Href,
-                URL:  strings.TrimRight(repo.BaseURL, "/") + "/" + strings.TrimLeft(e.Href, "/"),
-                File: path.Base(e.Href),
-            }
-            if rpmEVRBetter(m, best) {
-                cp := m; best = &cp
-            }
+func findBest(entries []entry, pkg string) (bootstrap.Match, error){
+    var best *bootstrap.Match
+    for _, e := range entries {
+        if strings.HasSuffix(pkg, ".rpm") {
+            ok, _ := path.Match(pkg, path.Base(e.Href))
+            if !ok { continue }
+        } else {
+            if e.Name != pkg { continue }
+        }
+        m := bootstrap.Match{
+            Name: e.Name,
+            EVR:  fmt.Sprintf("%d:%s-%s", e.Epoch, e.Ver, e.Rel),
+            Arch: e.Arch,
+            Href: e.Href,
+            URL:  strings.TrimRight(e.BaseURL, "/") + "/" + strings.TrimLeft(e.Href, "/"),
+            File: path.Base(e.Href),
+        }
+        if rpmEVRBetter(m, best) {
+            cp := m; best = &cp
         }
     }
     if best == nil { return bootstrap.Match{}, ErrNotFound }
     return *best, nil
+}
+
+func (r *RepodataResolver) findPrimaryXML(base string) (string, error) {
+    url := strings.TrimRight(base, "/") + "/repodata/repomd.xml"
+    resp, err := r.Client.Get(url); if err != nil { return "", err }
+    defer resp.Body.Close()
+    if resp.StatusCode != 200 { return "", fmt.Errorf("%s: %s", url, resp.Status) }
+    var md repomd
+    if err := xml.NewDecoder(resp.Body).Decode(&md); err != nil { return "", err }
+    for _, d := range md.Data {
+        if d.Type == "primary" {
+            fmt.Println("Found primary xml:", strings.TrimRight(base, "/") + "/" + strings.TrimLeft(d.Location.Href, "/"))
+            return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(d.Location.Href, "/"), nil
+        }
+    }
+    return "", errors.New("primary.xml not found")
+}
+
+func (r *RepodataResolver) loadPrimary(primURL string, baseurl string) ([]entry, error) {
+    resp, err := r.Client.Get(primURL); if err != nil { return nil, err }
+    defer resp.Body.Close()
+    if resp.StatusCode != 200 { return nil, fmt.Errorf("%s: %s", primURL, resp.Status) }
+    zr, err := gzip.NewReader(resp.Body); if err != nil { return nil, err }
+    defer zr.Close()
+    var meta primary
+    if err := xml.NewDecoder(zr).Decode(&meta); err != nil { return nil, err }
+    out := make([]entry, 0, len(meta.Packages))
+    for _, p := range meta.Packages {
+        out = append(out, entry{
+            Name:  p.Name,
+            Arch:  p.Arch,
+            Epoch: p.Version.Epoch,
+            Ver:   p.Version.Ver,
+            Rel:   p.Version.Rel,
+            Href:  p.Location.Href,
+            BaseURL: baseurl,
+        })
+    }
+    return out, nil
 }
 
 func isURL(s string) bool { 
@@ -121,43 +184,6 @@ func parseNevrArchFromFilename(fn string) (n nevr, arch string) {
     ver := fn[j+1 : i]
     rel := fn[i+1:]
     return nevr{name: name, ver: ver, rel: rel}, arch
-}
-
-func (r *RepodataResolver) findPrimaryXML(base string) (string, error) {
-    url := strings.TrimRight(base, "/") + "/repodata/repomd.xml"
-    resp, err := r.Client.Get(url); if err != nil { return "", err }
-    defer resp.Body.Close()
-    if resp.StatusCode != 200 { return "", fmt.Errorf("%s: %s", url, resp.Status) }
-    var md repomd
-    if err := xml.NewDecoder(resp.Body).Decode(&md); err != nil { return "", err }
-    for _, d := range md.Data {
-        if d.Type == "primary" {
-            return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(d.Location.Href, "/"), nil
-        }
-    }
-    return "", errors.New("primary.xml not found")
-}
-
-func (r *RepodataResolver) loadPrimary(primURL string) ([]entry, error) {
-    resp, err := r.Client.Get(primURL); if err != nil { return nil, err }
-    defer resp.Body.Close()
-    if resp.StatusCode != 200 { return nil, fmt.Errorf("%s: %s", primURL, resp.Status) }
-    zr, err := gzip.NewReader(resp.Body); if err != nil { return nil, err }
-    defer zr.Close()
-    var meta primary
-    if err := xml.NewDecoder(zr).Decode(&meta); err != nil { return nil, err }
-    out := make([]entry, 0, len(meta.Packages))
-    for _, p := range meta.Packages {
-        out = append(out, entry{
-            Name:  p.Name,
-            Arch:  p.Arch,
-            Epoch: p.Version.Epoch,
-            Ver:   p.Version.Ver,
-            Rel:   p.Version.Rel,
-            Href:  p.Location.Href,
-        })
-    }
-    return out, nil
 }
 
 func evrString(n nevr) string {

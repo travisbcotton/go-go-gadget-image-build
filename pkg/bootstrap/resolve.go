@@ -6,7 +6,7 @@ type Repo struct {
 }
 
 type Spec struct {
-    Raw string
+    Raw []string
 }
 
 type Match struct {
