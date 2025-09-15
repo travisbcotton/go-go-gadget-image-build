@@ -8,6 +8,9 @@ package main
 import (
     "fmt"
     "strings"
+    "net/http"
+    "time"
+    "context"
 
     "github.com/travisbcotton/go-go-gadget-image-build/internal/bootstrap/rpm"
     "github.com/travisbcotton/go-go-gadget-image-build/pkg/bootstrap"
@@ -47,5 +50,16 @@ func main() {
         if m.Name != "" {
             fmt.Printf("Match:\n  Name: %s\n  EVR: %s\n  Arch: %s\n  URL:  %s\n  File: %s\n", m.Name, m.EVR, m.Arch, m.URL, m.File)
         }
+    }
+
+    getter := rpm.NewGetterDownloader(&http.Client{Timeout: 45 * time.Second})
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+    for _, m := range matches {
+        res, err := getter.DownloadRPM(ctx, m.URL, "./rpms")
+        if err != nil {
+            fmt.Println("failed to download RPM")
+        }
+        fmt.Println("filepath:", res.Path)
     }
 }
