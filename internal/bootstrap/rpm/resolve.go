@@ -86,10 +86,17 @@ func (r *RepodataResolver) Resolve(specs bootstrap.Spec) ([]bootstrap.Match, err
     var compiled_entries []entry
     for _, repo := range r.Repos {
         primaryURL, err := r.findPrimaryXML(repo.BaseURL)
-        if err != nil { continue }
+        if err != nil { 
+            fmt.Println("Unable to find Primary for repo ", repo.BaseURL)
+            fmt.Println(err)
+            continue 
+        }
         baseurl := repo.BaseURL
         entries, err := r.loadPrimary(primaryURL, baseurl)
-        if err != nil { continue }
+        if err != nil { 
+            fmt.Println(err)
+            continue 
+        }
         compiled_entries = append(compiled_entries, entries...)
     }
     //Find best match in all compiled entries
@@ -130,9 +137,20 @@ func findBest(entries []entry, pkg string) (bootstrap.Match, error){
 
 func (r *RepodataResolver) findPrimaryXML(base string) (string, error) {
     url := strings.TrimRight(base, "/") + "/repodata/repomd.xml"
-    resp, err := r.Client.Get(url); if err != nil { return "", err }
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return "", err
+    }
+    req.Header.Set("Accept", "application/xml, text/xml;q=0.9, */*;q=0.8")
+    req.Header.Set("User-Agent", "bootstrapper/0.1 (+https://your.project)")
+    resp, err := r.Client.Do(req); if err != nil { 
+        fmt.Println("Error reading repomd.xml")
+        return "", err 
+    }
     defer resp.Body.Close()
-    if resp.StatusCode != 200 { return "", fmt.Errorf("%s: %s", url, resp.Status) }
+    if resp.StatusCode != 200 { 
+        return "", fmt.Errorf("%s: %s", url, resp.Status) 
+    }
     var md repomd
     if err := xml.NewDecoder(resp.Body).Decode(&md); err != nil { return "", err }
     for _, d := range md.Data {
@@ -145,7 +163,13 @@ func (r *RepodataResolver) findPrimaryXML(base string) (string, error) {
 }
 
 func (r *RepodataResolver) loadPrimary(primURL string, baseurl string) ([]entry, error) {
-    resp, err := r.Client.Get(primURL); if err != nil { return nil, err }
+    req, err := http.NewRequest("GET", primURL, nil)
+    if err != nil {
+        return nil, err
+    }
+    req.Header.Set("Accept", "application/xml, text/xml;q=0.9, */*;q=0.8")
+    req.Header.Set("User-Agent", "bootstrapper/0.1 (+https://your.project)")
+    resp, err := r.Client.Do(req); if err != nil { return nil, err }
     defer resp.Body.Close()
     if resp.StatusCode != 200 { return nil, fmt.Errorf("%s: %s", primURL, resp.Status) }
     zr, err := gzip.NewReader(resp.Body); if err != nil { return nil, err }

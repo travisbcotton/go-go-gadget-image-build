@@ -1,7 +1,10 @@
 package main
 
 //"github.com/travisbcotton/go-go-gadget-image-build/internal/bootstrap/rpm"
-
+//        "https://download.rockylinux.org/pub/rocky/8/BaseOS/x86_64/os/",
+//        "https://download.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/",
+//        "https://dl.rockylinux.org/pub/rocky/8/PowerTools/x86_64/os",
+//        "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/",
 import (
     "fmt"
     "strings"
@@ -11,11 +14,14 @@ import (
 )
 
 func main() {
-    //driver := rpm.NewRepodataResolver()
-    ipkgs := []string{"bash","kernel"}
+    ipkgs := []string{
+        "bash",
+        "libdnf",
+    }
     irepos := []string{
-        "https://download.rockylinux.org/pub/rocky/8/BaseOS/x86_64/os/",
-        "https://download.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/",
+        "https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
+        "https://download.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/",
+        "https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os",
     }
 
     repos := []bootstrap.Repo{}
@@ -25,7 +31,6 @@ func main() {
             Arch: "x86_64",
         })
     }
-    fmt.Println("Repo struct", repos)
 
     pkgs := bootstrap.Spec{}
     for _, p := range ipkgs {
