@@ -47,6 +47,7 @@ func main() {
         }
     }
 
+    var rpms []string
     getter := rpm.NewGetterDownloader(&http.Client{Timeout: 45 * time.Second})
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
@@ -54,7 +55,14 @@ func main() {
         res, err := getter.DownloadRPM(ctx, m.URL, "./rpms")
         if err != nil {
             fmt.Println("failed to download RPM")
+            panic(err)
         }
         fmt.Println("filepath:", res.Path)
+        rpms = append(rpms, res.Path)
+    }
+
+    err = rpm.InstallRPMs(rpms,"./rootfs")
+    if err != nil {
+        panic(err)
     }
 }
