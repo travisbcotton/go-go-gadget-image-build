@@ -28,11 +28,10 @@ func NewGetterDownloader(hc *http.Client) *GetterDownloader {
 }
 
 func (d *GetterDownloader) DownloadRPM(ctx context.Context, url string, dest string) (DownloadResult, error) {
-    c := *d.Client // shallow copy so we can tweak per-call
+    c := *d.Client
     c.Ctx = ctx
     c.Src = url
     c.Dst = dest
-    // Optional: set c.ProgressTracker, c.Pwd, c.Insecure, c.Umask, etc.
 
     if err := c.Get(); err != nil {
         return DownloadResult{}, err

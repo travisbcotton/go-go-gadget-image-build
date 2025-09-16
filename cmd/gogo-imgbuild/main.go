@@ -1,10 +1,5 @@
 package main
 
-//"github.com/travisbcotton/go-go-gadget-image-build/internal/bootstrap/rpm"
-//        "https://download.rockylinux.org/pub/rocky/8/BaseOS/x86_64/os/",
-//        "https://download.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/",
-//        "https://dl.rockylinux.org/pub/rocky/8/PowerTools/x86_64/os",
-//        "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/",
 import (
     "fmt"
     "strings"

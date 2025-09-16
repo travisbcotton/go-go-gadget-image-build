@@ -110,31 +110,7 @@ func (r *RepodataResolver) Resolve(specs bootstrap.Spec) ([]bootstrap.Match, err
     return best_matches, nil
 }
 
-func findBest(entries []entry, pkg string) (bootstrap.Match, error){
-    var best *bootstrap.Match
-    for _, e := range entries {
-        if strings.HasSuffix(pkg, ".rpm") {
-            ok, _ := path.Match(pkg, path.Base(e.Href))
-            if !ok { continue }
-        } else {
-            if e.Name != pkg { continue }
-        }
-        m := bootstrap.Match{
-            Name: e.Name,
-            EVR:  fmt.Sprintf("%d:%s-%s", e.Epoch, e.Ver, e.Rel),
-            Arch: e.Arch,
-            Href: e.Href,
-            URL:  strings.TrimRight(e.BaseURL, "/") + "/" + strings.TrimLeft(e.Href, "/"),
-            File: path.Base(e.Href),
-        }
-        if rpmEVRBetter(m, best) {
-            cp := m; best = &cp
-        }
-    }
-    if best == nil { return bootstrap.Match{}, ErrNotFound }
-    return *best, nil
-}
-
+// Search a repo for the primary.xml file and return the URL to it
 func (r *RepodataResolver) findPrimaryXML(base string) (string, error) {
     url := strings.TrimRight(base, "/") + "/repodata/repomd.xml"
     req, err := http.NewRequest("GET", url, nil)
@@ -162,6 +138,7 @@ func (r *RepodataResolver) findPrimaryXML(base string) (string, error) {
     return "", errors.New("primary.xml not found")
 }
 
+// Process a primary.xml and return a list of entry structs for each package
 func (r *RepodataResolver) loadPrimary(primURL string, baseurl string) ([]entry, error) {
     req, err := http.NewRequest("GET", primURL, nil)
     if err != nil {
@@ -191,16 +168,42 @@ func (r *RepodataResolver) loadPrimary(primURL string, baseurl string) ([]entry,
     return out, nil
 }
 
+// Find the best match for a package in a list of entry structs
+func findBest(entries []entry, pkg string) (bootstrap.Match, error){
+    var best *bootstrap.Match
+    for _, e := range entries {
+        if strings.HasSuffix(pkg, ".rpm") {
+            ok, _ := path.Match(pkg, path.Base(e.Href))
+            if !ok { continue }
+        } else {
+            if e.Name != pkg { continue }
+        }
+        m := bootstrap.Match{
+            Name: e.Name,
+            EVR:  fmt.Sprintf("%d:%s-%s", e.Epoch, e.Ver, e.Rel),
+            Arch: e.Arch,
+            Href: e.Href,
+            URL:  strings.TrimRight(e.BaseURL, "/") + "/" + strings.TrimLeft(e.Href, "/"),
+            File: path.Base(e.Href),
+        }
+        if rpmEVRBetter(m, best) {
+            cp := m; best = &cp
+        }
+    }
+    if best == nil { return bootstrap.Match{}, ErrNotFound }
+    return *best, nil
+}
+
+// check if a string is a URL
 func isURL(s string) bool { 
     return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://") 
 }
 
+// ChatGPT assisted from here and below
 func parseNevrArchFromFilename(fn string) (n nevr, arch string) {
-    // Strip .rpm
     fn = strings.TrimSuffix(fn, ".rpm")
     parts := strings.Split(fn, ".")
     if len(parts) >= 2 { arch = parts[len(parts)-1]; fn = strings.Join(parts[:len(parts)-1], ".") }
-    // split name-ver-rel (name may contain dashes; take last 2 dashes)
     i := strings.LastIndex(fn, "-")
     j := strings.LastIndex(fn[:i], "-")
     if i < 0 || j < 0 { return nevr{name: fn}, arch }
@@ -225,7 +228,6 @@ func rpmEVRBetter(a bootstrap.Match, cur *bootstrap.Match) bool {
 }
 
 func splitEVR(evr string) (epoch int, ver, rel string) {
-    // evr is like "0:2.34-100.el9" or "2.34-100.el9"
     epoch = 0
     s := evr
     if i := indexByte(s, ':'); i >= 0 {
@@ -241,21 +243,17 @@ func splitEVR(evr string) (epoch int, ver, rel string) {
 }
 
 func rpmvercmp(a, b string) int {
-    // Rough port of rpmdev-vercmp logic: split into alnum runs
     ia, ib := 0, 0
     for ia < len(a) || ib < len(b) {
-        // skip non-alnum
         for ia < len(a) && !isalnum(a[ia]) { ia++ }
         for ib < len(b) && !isalnum(b[ib]) { ib++ }
         if ia >= len(a) && ib >= len(b) { return 0 }
-        // grab sub
         sa := readRun(a, &ia)
         sb := readRun(b, &ib)
         da := isdigitStr(sa)
         db := isdigitStr(sb)
         switch {
         case da && db:
-            // trim leading zeros
             for len(sa) > 0 && sa[0] == '0' { sa = sa[1:] }
             for len(sb) > 0 && sb[0] == '0' { sb = sb[1:] }
             if len(sa) != len(sb) {
@@ -267,7 +265,6 @@ func rpmvercmp(a, b string) int {
             if sa > sb { return 1 }
             if sa < sb { return -1 }
         default:
-            // numeric is greater than alpha
             if da { return 1 } else { return -1 }
         }
     }
