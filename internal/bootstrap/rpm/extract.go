@@ -8,8 +8,20 @@ import (
 	"os"
 	"os/exec"
 	"bufio"
+	"strings"
 
 	"github.com/cavaliergopher/cpio"
+)
+
+const (
+    cpioModeTypeMask = 0170000
+    cpioModeDir      = 0040000
+    cpioModeReg      = 0100000
+    cpioModeSymlink  = 0120000
+    cpioModeChar     = 0020000
+    cpioModeBlock    = 0060000
+    cpioModeFIFO     = 0010000
+    cpioModeSocket   = 0140000
 )
 
 func ExtractCPIOStream(r io.Reader, dest string) error {
@@ -29,7 +41,61 @@ func ExtractCPIOStream(r io.Reader, dest string) error {
 			return fmt.Errorf("cpio read header: %w", err)
 		}
 		name := header.Name
-		fmt.Println("filename?: ", name)
+
+		for strings.HasPrefix(name, "./") {
+			name = strings.TrimPrefix(name, "./")
+		}
+		name = strings.TrimLeft(name,"/")
+
+		target := filepath.Join(dest, filepath.Clean(name))
+		if !strings.HasPrefix(target, dest+string(os.PathSeparator)) && target != dest {
+			if _, err := io.Copy(io.Discard, cr); err != nil {
+				return err
+			}
+			continue
+		}
+		mode := os.FileMode(header.Mode)
+		mt := header.ModTime
+
+		switch header.Mode & cpioModeTypeMask {
+		case cpio.TypeDir:
+			fmt.Println("file ", name, " is a directory")
+			if err := os.MkdirAll(target, mode|0o111); err != nil {
+				return err
+			}
+			_ = os.Chtimes(target, mt, mt)
+		case cpio.TypeReg:
+			fmt.Println("file ", name, " is a regular file")
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return err
+			}
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(f, cr); err != nil {
+				_ = f.Close()
+				return err
+			}
+			if err := f.Close(); err != nil {
+				return err
+			}
+			_ = os.Chtimes(target, mt, mt)
+		case cpio.TypeSymlink:
+			fmt.Println("file ", name, " is a symlink")
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return err
+			}
+			_ = os.Remove(target)
+			if err := os.Symlink(header.Linkname, target); err != nil {
+				return err
+			}
+		default:
+			fmt.Println("file ", name, " is an unknown type")
+			if _, err := io.Copy(io.Discard, cr); err != nil {
+				return err
+			}
+		}
 	}
 }
 
