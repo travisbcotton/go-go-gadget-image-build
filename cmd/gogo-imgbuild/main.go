@@ -8,9 +8,10 @@ import (
     "log"
     "flag"
 
-	storage "github.com/containers/storage"
+	storageRef "github.com/containers/image/v5/storage"
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
+	"github.com/containers/storage/pkg/reexec"
 
     "github.com/travisbcotton/go-go-gadget-image-build/internal/bootstrap/rpm"
     "github.com/travisbcotton/go-go-gadget-image-build/internal/config"
@@ -18,14 +19,16 @@ import (
 )
 
 func main() {
+    if reexec.Init() { return }
     defaultCfg := "./bootstrap.yaml"
     cfgPath := flag.String("config", defaultCfg, "path to YAML config (or '-' for stdin)")
     flag.Parse()
 
+    bctx := context.Background()
     store, err := openStore()
     if err != nil { log.Fatal(err) }
 	defer store.Shutdown(false)
-    builder, err := buildah.NewBuilder(ctx, store, buildah.BuilderOptions{
+    builder, err := buildah.NewBuilder(bctx, store, buildah.BuilderOptions{
 		FromImage: "scratch",
 	})
     if err != nil { log.Fatalf("new builder: %v", err) }
@@ -92,13 +95,18 @@ func main() {
     if err != nil {
         panic(err)
     }
-
-    if _, err := builder.Unmount(); err != nil {
+    fmt.Println("Unmounting Contianer")
+    if err := builder.Unmount(); err != nil {
 		log.Printf("unmount warning: %v", err)
 	}
 
     imageName := "localhost/custom-base:latest"
-    _, _, err = builder.Commit(ctx, imageName, buildah.CommitOptions{
+    dest, err := storageRef.Transport.ParseStoreReference(store, imageName)
+    if err != nil {
+	panic(err)
+    }
+    fmt.Println("Committing Container")
+    _, _, _, err = builder.Commit(bctx, dest, buildah.CommitOptions{
 		PreferredManifestType: define.OCIv1ImageManifest,
 	})
     if err != nil { log.Fatalf("commit: %v", err) }
