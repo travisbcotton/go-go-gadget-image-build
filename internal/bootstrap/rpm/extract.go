@@ -115,10 +115,12 @@ func ExtractRPM(rpm_path string, dest string) error {
 
 func InstallRPMs(rpms []string, dest string) error {
 	for _, r := range rpms {
+		fmt.Println("Extracting ", r)
 		err := ExtractRPM(r, dest)
 		if err != nil {
 			return fmt.Errorf("extract %s: %w", r ,err)
 		}
+		fmt.Println("Finished ", r)
 	}
 	return nil
 }
