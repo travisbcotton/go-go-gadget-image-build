@@ -8,6 +8,10 @@ import (
     "log"
     "flag"
 
+	storage "github.com/containers/storage"
+	"github.com/containers/buildah"
+	"github.com/containers/buildah/define"
+
     "github.com/travisbcotton/go-go-gadget-image-build/internal/bootstrap/rpm"
     "github.com/travisbcotton/go-go-gadget-image-build/internal/config"
     "github.com/travisbcotton/go-go-gadget-image-build/pkg/bootstrap"
@@ -17,6 +21,20 @@ func main() {
     defaultCfg := "./bootstrap.yaml"
     cfgPath := flag.String("config", defaultCfg, "path to YAML config (or '-' for stdin)")
     flag.Parse()
+
+    store, err := openStore()
+    if err != nil { log.Fatal(err) }
+	defer store.Shutdown(false)
+    builder, err := buildah.NewBuilder(ctx, store, buildah.BuilderOptions{
+		FromImage: "scratch",
+	})
+    if err != nil { log.Fatalf("new builder: %v", err) }
+    defer func() { _ = builder.Delete() }()
+    mountPoint, err := builder.Mount("")
+    if err != nil { log.Fatalf("mount: %v", err) }
+    fmt.Println("Mounted at:", mountPoint)
+    rootfs := mountPoint
+    //_ = runCommandInChroot(rootfs, "rpm", "--initdb")
 
     // load config file
     cfg, err := config.Load(*cfgPath)
@@ -70,8 +88,19 @@ func main() {
     }
 
     //Install packages
-    err = rpm.InstallRPMs(rpms,"./rootfs")
+    err = rpm.InstallRPMs(rpms, rootfs)
     if err != nil {
         panic(err)
     }
+
+    if _, err := builder.Unmount(); err != nil {
+		log.Printf("unmount warning: %v", err)
+	}
+
+    imageName := "localhost/custom-base:latest"
+    _, _, err = builder.Commit(ctx, imageName, buildah.CommitOptions{
+		PreferredManifestType: define.OCIv1ImageManifest,
+	})
+    if err != nil { log.Fatalf("commit: %v", err) }
+    fmt.Println("Committed image:", imageName)
 }
