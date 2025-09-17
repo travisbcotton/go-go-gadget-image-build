@@ -2,10 +2,9 @@ package bootstrap
 
 type Repo struct {
     BaseURL string
-    Arch    string
 }
 
-type Spec struct {
+type Package struct {
     Raw []string
 }
 
@@ -19,5 +18,5 @@ type Match struct {
 }
 
 type Resolver interface {
-    Resolve(spec Spec) (Match, error)
+    Resolve(pkgs Package) (Match, error)
 }

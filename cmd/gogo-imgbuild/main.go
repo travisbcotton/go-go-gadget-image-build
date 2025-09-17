@@ -2,51 +2,58 @@ package main
 
 import (
     "fmt"
-    "strings"
     "net/http"
     "time"
     "context"
+    "log"
+    "flag"
 
     "github.com/travisbcotton/go-go-gadget-image-build/internal/bootstrap/rpm"
+    "github.com/travisbcotton/go-go-gadget-image-build/internal/config"
     "github.com/travisbcotton/go-go-gadget-image-build/pkg/bootstrap"
 )
 
 func main() {
-    ipkgs := []string{
-        "bash",
-        "libdnf",
-    }
-    irepos := []string{
-        "https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
-        "https://download.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/",
-        "https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os",
-    }
+    defaultCfg := "./bootstrap.yaml"
+    cfgPath := flag.String("config", defaultCfg, "path to YAML config (or '-' for stdin)")
+    flag.Parse()
 
-    repos := []bootstrap.Repo{}
-    for _,r := range irepos {
+    // load config file
+    cfg, err := config.Load(*cfgPath)
+    if err != nil { log.Fatal(err) }
+
+    //Populate repos
+    repos := make([]bootstrap.Repo, 0, len(cfg.Repos))
+    for _,r := range cfg.Repos {
         repos = append(repos, bootstrap.Repo{
-            BaseURL: strings.TrimSpace(r), 
-            Arch: "x86_64",
+            BaseURL: r.URL, 
         })
     }
 
-    pkgs := bootstrap.Spec{}
-    for _, p := range ipkgs {
+    //Populate packages
+    pkgs := bootstrap.Package{}
+    for _, p := range cfg.Packages {
         pkgs.Raw = append(pkgs.Raw, p)
     }
 
-    resolve := rpm.NewRepodataResolver(repos)
+    //Set arch
+    arch := cfg.Arch
+
+    //Find best matches
+    resolve := rpm.NewRepodataResolver(repos, arch)
     matches,err := resolve.Resolve(pkgs)
     if err != nil {
         panic(err)
     }
 
+    //Print matches
     for _, m := range matches {
         if m.Name != "" {
             fmt.Printf("Match:\n  Name: %s\n  EVR: %s\n  Arch: %s\n  URL:  %s\n  File: %s\n", m.Name, m.EVR, m.Arch, m.URL, m.File)
         }
     }
 
+    //Download all best matches
     var rpms []string
     getter := rpm.NewGetterDownloader(&http.Client{Timeout: 45 * time.Second})
     ctx, cancel := context.WithCancel(context.Background())
@@ -61,6 +68,7 @@ func main() {
         rpms = append(rpms, res.Path)
     }
 
+    //Install packages
     err = rpm.InstallRPMs(rpms,"./rootfs")
     if err != nil {
         panic(err)
