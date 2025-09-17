@@ -90,11 +90,11 @@ func ExtractCPIOStream(r io.Reader, dest string) error {
 			if err := os.Symlink(header.Linkname, target); err != nil {
 				return err
 			}
+		case cpioModeFIFO, cpioModeChar, cpioModeBlock, cpioModeSocket:
+			if _, err := io.Copy(io.Discard, cr); err != nil { return err }
 		default:
 			fmt.Println("file ", name, " is an unknown type")
-			if _, err := io.Copy(io.Discard, cr); err != nil {
-				return err
-			}
+			if _, err := io.Copy(io.Discard, cr); err != nil { return err }
 		}
 	}
 }
