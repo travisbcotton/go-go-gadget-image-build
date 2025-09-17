@@ -47,9 +47,10 @@ func main() {
     }
 
     //Print matches
+    fmt.Println("Found matches")
     for _, m := range matches {
-        if m.Name != "" {
-            fmt.Printf("Match:\n  Name: %s\n  EVR: %s\n  Arch: %s\n  URL:  %s\n  File: %s\n", m.Name, m.EVR, m.Arch, m.URL, m.File)
+       if m.Name != "" {
+            fmt.Printf("Package: %s\n", m.File)
         }
     }
 
@@ -59,12 +60,12 @@ func main() {
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
     for _, m := range matches {
+        fmt.Println("Downloading:", m.Name)
         res, err := getter.DownloadRPM(ctx, m.URL, "./rpms")
         if err != nil {
             fmt.Println("failed to download RPM")
             panic(err)
         }
-        fmt.Println("filepath:", res.Path)
         rpms = append(rpms, res.Path)
     }
 

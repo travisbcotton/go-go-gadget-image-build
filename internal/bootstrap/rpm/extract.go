@@ -59,13 +59,11 @@ func ExtractCPIOStream(r io.Reader, dest string) error {
 
 		switch header.Mode & cpioModeTypeMask {
 		case cpio.TypeDir:
-			fmt.Println("file ", name, " is a directory")
 			if err := os.MkdirAll(target, mode|0o111); err != nil {
 				return err
 			}
 			_ = os.Chtimes(target, mt, mt)
 		case cpio.TypeReg:
-			fmt.Println("file ", name, " is a regular file")
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
@@ -82,7 +80,6 @@ func ExtractCPIOStream(r io.Reader, dest string) error {
 			}
 			_ = os.Chtimes(target, mt, mt)
 		case cpio.TypeSymlink:
-			fmt.Println("file ", name, " is a symlink")
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
@@ -93,7 +90,6 @@ func ExtractCPIOStream(r io.Reader, dest string) error {
 		case cpioModeFIFO, cpioModeChar, cpioModeBlock, cpioModeSocket:
 			if _, err := io.Copy(io.Discard, cr); err != nil { return err }
 		default:
-			fmt.Println("file ", name, " is an unknown type")
 			if _, err := io.Copy(io.Discard, cr); err != nil { return err }
 		}
 	}
@@ -120,7 +116,6 @@ func InstallRPMs(rpms []string, dest string) error {
 		if err != nil {
 			return fmt.Errorf("extract %s: %w", r ,err)
 		}
-		fmt.Println("Finished ", r)
 	}
 	return nil
 }
