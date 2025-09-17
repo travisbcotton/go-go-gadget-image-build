@@ -2,59 +2,113 @@ package main
 
 import (
     "fmt"
-    "strings"
     "net/http"
     "time"
     "context"
+    "log"
+    "flag"
+
+	storageRef "github.com/containers/image/v5/storage"
+	"github.com/containers/buildah"
+	"github.com/containers/buildah/define"
+	"github.com/containers/storage/pkg/reexec"
 
     "github.com/travisbcotton/go-go-gadget-image-build/internal/bootstrap/rpm"
+    "github.com/travisbcotton/go-go-gadget-image-build/internal/config"
     "github.com/travisbcotton/go-go-gadget-image-build/pkg/bootstrap"
 )
 
 func main() {
-    ipkgs := []string{
-        "bash",
-        "libdnf",
-    }
-    irepos := []string{
-        "https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
-        "https://download.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/",
-        "https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os",
-    }
+    if reexec.Init() { return }
+    defaultCfg := "./bootstrap.yaml"
+    cfgPath := flag.String("config", defaultCfg, "path to YAML config (or '-' for stdin)")
+    flag.Parse()
 
-    repos := []bootstrap.Repo{}
-    for _,r := range irepos {
+    bctx := context.Background()
+    store, err := openStore()
+    if err != nil { log.Fatal(err) }
+	defer store.Shutdown(false)
+    builder, err := buildah.NewBuilder(bctx, store, buildah.BuilderOptions{
+		FromImage: "scratch",
+	})
+    if err != nil { log.Fatalf("new builder: %v", err) }
+    defer func() { _ = builder.Delete() }()
+    mountPoint, err := builder.Mount("")
+    if err != nil { log.Fatalf("mount: %v", err) }
+    fmt.Println("Mounted at:", mountPoint)
+    rootfs := mountPoint
+    //_ = runCommandInChroot(rootfs, "rpm", "--initdb")
+
+    // load config file
+    cfg, err := config.Load(*cfgPath)
+    if err != nil { log.Fatal(err) }
+
+    //Populate repos
+    repos := make([]bootstrap.Repo, 0, len(cfg.Repos))
+    for _,r := range cfg.Repos {
         repos = append(repos, bootstrap.Repo{
-            BaseURL: strings.TrimSpace(r), 
-            Arch: "x86_64",
+            BaseURL: r.URL, 
         })
     }
 
-    pkgs := bootstrap.Spec{}
-    for _, p := range ipkgs {
+    //Populate packages
+    pkgs := bootstrap.Package{}
+    for _, p := range cfg.Packages {
         pkgs.Raw = append(pkgs.Raw, p)
     }
 
-    resolve := rpm.NewRepodataResolver(repos)
+    //Set arch
+    arch := cfg.Arch
+
+    //Find best matches
+    resolve := rpm.NewRepodataResolver(repos, arch)
     matches,err := resolve.Resolve(pkgs)
     if err != nil {
         panic(err)
     }
 
+    //Print matches
+    fmt.Println("Found matches")
     for _, m := range matches {
-        if m.Name != "" {
-            fmt.Printf("Match:\n  Name: %s\n  EVR: %s\n  Arch: %s\n  URL:  %s\n  File: %s\n", m.Name, m.EVR, m.Arch, m.URL, m.File)
+       if m.Name != "" {
+            fmt.Printf("Package: %s\n", m.File)
         }
     }
 
+    //Download all best matches
+    var rpms []string
     getter := rpm.NewGetterDownloader(&http.Client{Timeout: 45 * time.Second})
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
     for _, m := range matches {
+        fmt.Println("Downloading:", m.Name)
         res, err := getter.DownloadRPM(ctx, m.URL, "./rpms")
         if err != nil {
             fmt.Println("failed to download RPM")
+            panic(err)
         }
-        fmt.Println("filepath:", res.Path)
+        rpms = append(rpms, res.Path)
     }
+
+    //Install packages
+    err = rpm.InstallRPMs(rpms, rootfs)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("Unmounting Contianer")
+    if err := builder.Unmount(); err != nil {
+		log.Printf("unmount warning: %v", err)
+	}
+
+    imageName := "localhost/custom-base:latest"
+    dest, err := storageRef.Transport.ParseStoreReference(store, imageName)
+    if err != nil {
+	panic(err)
+    }
+    fmt.Println("Committing Container")
+    _, _, _, err = builder.Commit(bctx, dest, buildah.CommitOptions{
+		PreferredManifestType: define.OCIv1ImageManifest,
+	})
+    if err != nil { log.Fatalf("commit: %v", err) }
+    fmt.Println("Committed image:", imageName)
 }

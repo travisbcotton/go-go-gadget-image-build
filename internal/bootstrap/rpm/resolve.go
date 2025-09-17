@@ -32,6 +32,7 @@ type location struct {
 type RepodataResolver struct {
     Client *http.Client
     Repos  []bootstrap.Repo
+    Arch   string
 }
 
 type primary struct {
@@ -59,17 +60,18 @@ type entry struct {
     BaseURL    string
 }
 
-func NewRepodataResolver(repos []bootstrap.Repo) *RepodataResolver {
+func NewRepodataResolver(repos []bootstrap.Repo, arch string) *RepodataResolver {
     return &RepodataResolver{
         Client: &http.Client{Timeout: 45 * time.Second},
         Repos:  repos,
+        Arch: arch,
     }
 }
 
-func (r *RepodataResolver) Resolve(specs bootstrap.Spec) ([]bootstrap.Match, error) {
+func (r *RepodataResolver) Resolve(pkgs bootstrap.Package) ([]bootstrap.Match, error) {
     var best_matches []bootstrap.Match
     // process packages in URL format
-    for _, s := range specs.Raw {
+    for _, s := range pkgs.Raw {
         if isURL(s) && strings.HasSuffix(s, ".rpm") {
             f := path.Base(s)
             n, arch := parseNevrArchFromFilename(f)
@@ -100,8 +102,8 @@ func (r *RepodataResolver) Resolve(specs bootstrap.Spec) ([]bootstrap.Match, err
         compiled_entries = append(compiled_entries, entries...)
     }
     //Find best match in all compiled entries
-    for _, s := range specs.Raw {
-        best, err := findBest(compiled_entries, s)
+    for _, s := range pkgs.Raw {
+        best, err := r.findBest(compiled_entries, s)
         if err != nil {
             fmt.Println("package ", s, "not found")
         }
@@ -169,9 +171,10 @@ func (r *RepodataResolver) loadPrimary(primURL string, baseurl string) ([]entry,
 }
 
 // Find the best match for a package in a list of entry structs
-func findBest(entries []entry, pkg string) (bootstrap.Match, error){
+func (r *RepodataResolver) findBest(entries []entry, pkg string) (bootstrap.Match, error){
     var best *bootstrap.Match
     for _, e := range entries {
+        if e.Arch != r.Arch && e.Arch != "noarch" { continue }
         if strings.HasSuffix(pkg, ".rpm") {
             ok, _ := path.Match(pkg, path.Base(e.Href))
             if !ok { continue }
