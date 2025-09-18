@@ -33,9 +33,11 @@ func applyDefaults(c *Config) {
 	if c.Arch == nil {
 		c.Arch = []string{"x86_64", "noarch"}
 	}
-	if c.GPGCheck == nil {
-		def := 1
-		c.GPGCheck = &def
+	for _, r := range c.Repos {
+		if r.GPGCheck == nil {
+			def := 1
+			r.GPGCheck = &def
+		}
 	}
 }
 
