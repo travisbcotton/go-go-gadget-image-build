@@ -33,6 +33,10 @@ func applyDefaults(c *Config) {
 	if c.Arch == nil {
 		c.Arch = []string{"x86_64", "noarch"}
 	}
+	if c.GPGCheck == nil {
+		def := 1
+		c.GPGCheck = &def
+	}
 }
 
 func validate(c *Config) error {

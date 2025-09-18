@@ -53,7 +53,7 @@ func main() {
             BaseURL: r.URL, 
             ID: r.ID,
             GPG: r.GPG
-            GPGCheck: r.GPGCheck
+            GPGCheck: &r.GPGCheck
         })
     }
 
