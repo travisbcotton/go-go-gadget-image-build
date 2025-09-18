@@ -1,5 +1,5 @@
 ---
-arch: ['x86_64', 'noarch']
+arch: ['x86_64', 'noarch', 'i686']
 
 repos:
   - id: 'Rocky Base'
@@ -11,13 +11,36 @@ repos:
 
 packages:
   - filesystem
-  - glibc
+  - setup
   - bash
   - coreutils
-  - ncurses-libs
+  - glibc
+  - glibc-langpack-en
+  - libselinux
+  - libsepol
   - libxcrypt
+  - ncurses-libs
+  - libcap
+  - attr
+  - acl
+  - sed
+  - grep
+  - findutils
+  - util-linux
+  - shadow-utils
   - rpm
+  - rpm-libs
+  - rpm-build-libs
+  - sqlite
   - libsolv
   - libdnf
   - python3
+  - python3-dnf
+  - ca-certificates
+  - curl
+  - libcurl
+  - gzip
+  - xz
+  - zstd
+  - libdnf
   - dnf

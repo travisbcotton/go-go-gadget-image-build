@@ -1,5 +1,7 @@
 package main
+/*
 
+*/
 import (
     "fmt"
     "net/http"
@@ -24,6 +26,7 @@ func main() {
     cfgPath := flag.String("config", defaultCfg, "path to YAML config (or '-' for stdin)")
     flag.Parse()
 
+    
     bctx := context.Background()
     store, err := openStore()
     if err != nil { log.Fatal(err) }

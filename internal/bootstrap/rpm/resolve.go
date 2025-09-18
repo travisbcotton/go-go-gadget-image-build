@@ -32,7 +32,7 @@ type location struct {
 type RepodataResolver struct {
     Client *http.Client
     Repos  []bootstrap.Repo
-    Arch   string
+    Arch   []string
 }
 
 type primary struct {
@@ -60,7 +60,7 @@ type entry struct {
     BaseURL    string
 }
 
-func NewRepodataResolver(repos []bootstrap.Repo, arch string) *RepodataResolver {
+func NewRepodataResolver(repos []bootstrap.Repo, arch []string) *RepodataResolver {
     return &RepodataResolver{
         Client: &http.Client{Timeout: 45 * time.Second},
         Repos:  repos,
@@ -101,6 +101,7 @@ func (r *RepodataResolver) Resolve(pkgs bootstrap.Package) ([]bootstrap.Match, e
         }
         compiled_entries = append(compiled_entries, entries...)
     }
+    
     //Find best match in all compiled entries
     for _, s := range pkgs.Raw {
         best, err := r.findBest(compiled_entries, s)
@@ -173,30 +174,36 @@ func (r *RepodataResolver) loadPrimary(primURL string, baseurl string) ([]entry,
 // Find the best match for a package in a list of entry structs
 func (r *RepodataResolver) findBest(entries []entry, pkg string) (bootstrap.Match, error){
     var best *bootstrap.Match
-    for _, e := range entries {
-        if strings.HasSuffix(pkg, ".rpm") {
-            ok, _ := path.Match(pkg, path.Base(e.Href))
-            if !ok { continue }
-        } else {
-            if e.Name != pkg { continue }
-        }
-        m := bootstrap.Match{
-            Name: e.Name,
-            EVR:  fmt.Sprintf("%d:%s-%s", e.Epoch, e.Ver, e.Rel),
-            Arch: e.Arch,
-            Href: e.Href,
-            URL:  strings.TrimRight(e.BaseURL, "/") + "/" + strings.TrimLeft(e.Href, "/"),
-            File: path.Base(e.Href),
-        }
-        if rpmEVRBetter(m, best) {
-            if best != nil {
-                if m.Arch != best.Arch { continue }
+    // loop over all entries
+    for _, arch := range r.Arch {
+        //loop over all defined architectures
+        for _, e := range entries {
+            if e.Arch != arch { continue }
+            if strings.HasSuffix(pkg, ".rpm") {
+                ok, _ := path.Match(pkg, path.Base(e.Href))
+                if !ok { continue }
+            } else {
+                if e.Name != pkg { continue }
             }
-            cp := m; best = &cp
+            m := bootstrap.Match{
+                Name: e.Name,
+                EVR:  fmt.Sprintf("%d:%s-%s", e.Epoch, e.Ver, e.Rel),
+                Arch: e.Arch,
+                Href: e.Href,
+                URL:  strings.TrimRight(e.BaseURL, "/") + "/" + strings.TrimLeft(e.Href, "/"),
+                File: path.Base(e.Href),
+            }
+        
+            if rpmEVRBetter(m, best) {
+               cp := m; best = &cp
+            }
+            if best != nil {
+                return *best,nil
+            }
         }
     }
-    if best == nil { return bootstrap.Match{}, ErrNotFound }
-    return *best, nil
+    //Did not find this package
+    return bootstrap.Match{}, ErrNotFound
 }
 
 // check if a string is a URL
