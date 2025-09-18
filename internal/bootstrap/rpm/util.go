@@ -74,8 +74,8 @@ func WriteRepos(rootfs string, repos []bootstrap.Repo) error {
 			return errors.New("repo.ID is required")
 		}
 		fmt.Fprintf(&b, "[%s]\n", r.ID)
-		fmt.Fprintf(&b, "name=%s\n", escape(r.ID))
-		fmt.Fprintf(&b, "baseurl=%s\n", strings.Join(r.BaseURL, ","))
+		fmt.Fprintf(&b, "name=%s\n", r.ID)
+		fmt.Fprintf(&b, "baseurl=%s\n", r.BaseURL)
 		fmt.Fprintf(&b, "enabled=1\n")
 	}
 	path := filepath.Join(dir, filename)
