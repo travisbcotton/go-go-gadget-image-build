@@ -51,6 +51,7 @@ func main() {
     for _,r := range cfg.Repos {
         repos = append(repos, bootstrap.Repo{
             BaseURL: r.URL, 
+            ID: r.ID
         })
     }
 
