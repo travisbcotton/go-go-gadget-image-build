@@ -89,3 +89,7 @@ packages:
   - libevent
   - openssl-libs
   - cyrus-sasl-lib
+  - ca-certificates
+  - p11-kit-trust
+  - p11-kit
+  - libtasn1
