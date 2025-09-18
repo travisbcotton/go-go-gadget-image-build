@@ -52,8 +52,8 @@ func main() {
         repos = append(repos, bootstrap.Repo{
             BaseURL: r.URL, 
             ID: r.ID,
-            GPG: r.GPG
-            GPGCheck: &r.GPGCheck
+            GPG: r.GPG,
+            GPGCheck: r.GPGCheck,
         })
     }
 
