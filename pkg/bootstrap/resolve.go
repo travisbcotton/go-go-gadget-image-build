@@ -1,6 +1,7 @@
 package bootstrap
 
 type Repo struct {
+    ID      string
     BaseURL string
 }
 
