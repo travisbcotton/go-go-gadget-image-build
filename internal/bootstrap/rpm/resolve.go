@@ -189,7 +189,9 @@ func (r *RepodataResolver) findBest(entries []entry, pkg string) (bootstrap.Matc
             File: path.Base(e.Href),
         }
         if rpmEVRBetter(m, best) {
-            if m.Arch != best.Arch { continue }
+            if best != nil {
+                if m.Arch != best.Arch { continue }
+            }
             cp := m; best = &cp
         }
     }
