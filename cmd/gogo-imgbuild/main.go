@@ -98,6 +98,15 @@ func main() {
     if err != nil {
         panic(err)
     }
+
+    //Create /etc/os-release
+    _ = rpm.Write(rootfs, rpm.OSRelease{
+        Name:       "Distroless",
+        ID:         "distroless",
+        VersionID:  "9",
+        PrettyName: "Distroless Minimal",
+    })
+
     fmt.Println("Unmounting Contianer")
     if err := builder.Unmount(); err != nil {
 		log.Printf("unmount warning: %v", err)

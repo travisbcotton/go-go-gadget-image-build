@@ -27,20 +27,62 @@ packages:
   - grep
   - findutils
   - util-linux
-  - shadow-utils
   - rpm
   - rpm-libs
   - rpm-build-libs
   - sqlite
   - libsolv
-  - libdnf
-  - python3
-  - python3-dnf
-  - ca-certificates
   - curl
   - libcurl
   - gzip
   - xz
   - zstd
   - libdnf
-  - dnf
+  - microdnf
+  - libsmartcols
+  - libpeas
+  - glib2
+  - libgcc
+  - libstdc++
+  - pcre
+  - pcre2
+  - libffi
+  - gobject-introspection
+  - zlib
+  - libmount
+  - librepo
+  - sqlite-libs
+  - json-c
+  - libmodulemd
+  - libsmartcols
+  - gpgme
+  - libxml2
+  - libmount
+  - libffi
+  - xz-libs
+  - bzip2-libs
+  - libzstd
+  - lua-libs
+  - popt
+  - libacl
+  - audit-libs
+  - file-libs
+  - libyaml
+  - libassuan
+  - libgpg-error
+  - libnghttp2
+  - libidn2
+  - libssh
+  - libpsl
+  - krb5-libs
+  - libcom_err
+  - openldap
+  - libbrotli
+  - libblkid
+  - libattr
+  - libcap-ng
+  - libunistring
+  - keyutils-libs
+  - libevent
+  - openssl-libs
+  - cyrus-sasl-lib
