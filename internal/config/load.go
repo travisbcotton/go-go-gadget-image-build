@@ -30,8 +30,13 @@ func Load(path string) (*Config, error) {
 }
 
 func applyDefaults(c *Config) {
-	if c.Arch == "" {
-		c.Arch = "x86_64"
+	if c.Arch == nil {
+		c.Arch = []string{"x86_64", "noarch"}
+	}
+    for i := range c.Repos {
+        if c.Repos[i].GPGCheck == nil {
+    	    c.Repos[i].GPGCheck = Ptr(1) // persists
+        }
 	}
 }
 
@@ -50,3 +55,4 @@ func validate(c *Config) error {
 	return nil
 }
 
+func Ptr[T any](v T) *T { return &v }

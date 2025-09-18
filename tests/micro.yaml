@@ -1,0 +1,99 @@
+---
+arch: ['x86_64', 'noarch', 'i686']
+
+repos:
+  - id: 'Rocky Base'
+    url: 'https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/'
+    gpgcheck: 0
+  - id: 'Rocky Appstream'
+    url: 'https://download.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/'
+    gpgcheck: 0
+  - id: 'Rocky CRB'
+    url: 'https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os'
+    gpgcheck: 0
+
+packages:
+  - filesystem
+  - setup
+  - bash
+  - coreutils
+  - glibc
+  - glibc-langpack-en
+  - libselinux
+  - libsepol
+  - libxcrypt
+  - ncurses-libs
+  - libcap
+  - attr
+  - acl
+  - sed
+  - grep
+  - findutils
+  - util-linux
+  - rpm
+  - rpm-libs
+  - rpm-build-libs
+  - sqlite
+  - libsolv
+  - curl
+  - libcurl
+  - gzip
+  - xz
+  - zstd
+  - libdnf
+  - microdnf
+  - libsmartcols
+  - libpeas
+  - glib2
+  - libgcc
+  - libstdc++
+  - pcre
+  - pcre2
+  - libffi
+  - gobject-introspection
+  - zlib
+  - libmount
+  - librepo
+  - sqlite-libs
+  - json-c
+  - libmodulemd
+  - libsmartcols
+  - gpgme
+  - libxml2
+  - libmount
+  - libffi
+  - xz-libs
+  - bzip2-libs
+  - libzstd
+  - lua-libs
+  - popt
+  - libacl
+  - audit-libs
+  - file-libs
+  - libyaml
+  - libassuan
+  - libgpg-error
+  - libnghttp2
+  - libidn2
+  - libssh
+  - libpsl
+  - krb5-libs
+  - libcom_err
+  - openldap
+  - libbrotli
+  - libblkid
+  - libattr
+  - libcap-ng
+  - libunistring
+  - keyutils-libs
+  - libevent
+  - openssl-libs
+  - cyrus-sasl-lib
+  - ca-certificates
+  - p11-kit-trust
+  - p11-kit
+  - libtasn1
+  - gnupg2
+  - libgcrypt
+  - readline
+  - npth

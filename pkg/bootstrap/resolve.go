@@ -1,7 +1,10 @@
 package bootstrap
 
 type Repo struct {
-    BaseURL string
+    ID          string
+    BaseURL     string
+    GPG         string
+    GPGCheck    int
 }
 
 type Package struct {

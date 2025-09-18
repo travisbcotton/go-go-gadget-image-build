@@ -1,5 +1,7 @@
 package main
+/*
 
+*/
 import (
     "fmt"
     "net/http"
@@ -24,6 +26,7 @@ func main() {
     cfgPath := flag.String("config", defaultCfg, "path to YAML config (or '-' for stdin)")
     flag.Parse()
 
+    
     bctx := context.Background()
     store, err := openStore()
     if err != nil { log.Fatal(err) }
@@ -48,6 +51,9 @@ func main() {
     for _,r := range cfg.Repos {
         repos = append(repos, bootstrap.Repo{
             BaseURL: r.URL, 
+            ID: r.ID,
+            GPG: r.GPG,
+            GPGCheck: *r.GPGCheck,
         })
     }
 
@@ -95,6 +101,24 @@ func main() {
     if err != nil {
         panic(err)
     }
+
+    //Create /etc/os-release
+    err = rpm.WriteOSRelease(rootfs, rpm.OSRelease{
+        Name:       "Distroless",
+        ID:         "distroless",
+        VersionID:  "9",
+        PrettyName: "Distroless Minimal",
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    //Write repos to /etc/yum.repos.d/gogo-imgbuild.repo
+    err = rpm.WriteRepos(rootfs, repos)
+    if err != nil {
+        panic(err)
+    }
+
     fmt.Println("Unmounting Contianer")
     if err := builder.Unmount(); err != nil {
 		log.Printf("unmount warning: %v", err)

@@ -1,6 +1,5 @@
 # Builder image
 FROM golang:1.25 AS builder
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential pkg-config \
     libgpgme-dev libassuan-dev libgcrypt20-dev \
@@ -13,7 +12,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 RUN go list -m github.com/containers/storage
 COPY . . 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags "containers_image_openpgp" -ldflags="-s -w" -o /out/gogo-imgbuild ./cmd/gogo-imgbuild
+RUN CGO_ENABLED=0 GOOS=linux go build -tags "containers_image_openpgp" -ldflags="-s -w" -o /out/gogo-imgbuild ./cmd/gogo-imgbuild
 
 # Run image 
 FROM alpine:latest
