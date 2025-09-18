@@ -79,9 +79,7 @@ func WriteRepos(rootfs string, repos []bootstrap.Repo) error {
 		if r.GPG != "" {
 			fmt.Fprintf(&b, "gpgkey=%s\n", r.GPG)
 		}
-		if r.GPGCheck != nil {
-			fmt.Fprintf(&b, "gpgcheck=%d\n", r.GPGCheck)
-		}
+		fmt.Fprintf(&b, "gpgcheck=%d\n", r.GPGCheck)
 		fmt.Fprintf(&b, "enabled=1\n")
 	}
 	path := filepath.Join(dir, filename)
