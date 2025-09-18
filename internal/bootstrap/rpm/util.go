@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"errors"
+
+	"github.com/travisbcotton/go-go-gadget-image-build/pkg/bootstrap"
 )
 
 type OSRelease struct {
@@ -14,7 +18,7 @@ type OSRelease struct {
 	Version     string
 }
 
-func Write(rootfs string, r OSRelease) error {
+func WriteOSRelease(rootfs string, r OSRelease) error {
 	etcDir := filepath.Join(rootfs, "etc")
 	if err := os.MkdirAll(etcDir, 0o755); err != nil {
 		return err
@@ -51,6 +55,32 @@ func Write(rootfs string, r OSRelease) error {
 		// _ = copyFile(etcPath, libPath)
 		// but usually the symlink is fine.
 		return err
+	}
+	return nil
+}
+
+func WriteRepos(rootfs string, repos []bootstrap.Repo) error {
+	if len(repos) == 0 {
+		return errors.New("no repos to write")
+	}
+	dir := filepath.Join(rootfs, "etc", "yum.repos.d")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", dir, err)
+	}
+	filename := "gogo-imgbuild.repo"
+	var b strings.Builder
+	for _, r := range repos {
+		if r.ID == "" {
+			return errors.New("repo.ID is required")
+		}
+		fmt.Fprintf(&b, "[%s]\n", r.ID)
+		fmt.Fprintf(&b, "name=%s\n", escape(r.ID))
+		fmt.Fprintf(&b, "baseurl=%s\n", strings.Join(r.BaseURL, ","))
+		fmt.Fprintf(&b, "enabled=1\n")
+	}
+	path := filepath.Join(dir, filename)
+	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", path, err)
 	}
 	return nil
 }

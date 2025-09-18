@@ -100,12 +100,21 @@ func main() {
     }
 
     //Create /etc/os-release
-    _ = rpm.Write(rootfs, rpm.OSRelease{
+    err = rpm.WriteOSRelease(rootfs, rpm.OSRelease{
         Name:       "Distroless",
         ID:         "distroless",
         VersionID:  "9",
         PrettyName: "Distroless Minimal",
     })
+    if err != nil {
+        panic(err)
+    }
+
+    //Write repos to /etc/yum.repos.d/gogo-imgbuild.repo
+    err = rpm.WriteRepos(rootfs, repos)
+    if err != nil {
+        panic(err)
+    }
 
     fmt.Println("Unmounting Contianer")
     if err := builder.Unmount(); err != nil {
