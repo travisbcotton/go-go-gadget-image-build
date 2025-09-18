@@ -174,7 +174,6 @@ func (r *RepodataResolver) loadPrimary(primURL string, baseurl string) ([]entry,
 func (r *RepodataResolver) findBest(entries []entry, pkg string) (bootstrap.Match, error){
     var best *bootstrap.Match
     for _, e := range entries {
-        if e.Arch != r.Arch && e.Arch != "noarch" { continue }
         if strings.HasSuffix(pkg, ".rpm") {
             ok, _ := path.Match(pkg, path.Base(e.Href))
             if !ok { continue }
@@ -190,6 +189,7 @@ func (r *RepodataResolver) findBest(entries []entry, pkg string) (bootstrap.Matc
             File: path.Base(e.Href),
         }
         if rpmEVRBetter(m, best) {
+            if m.Arch != best.Arch { continue }
             cp := m; best = &cp
         }
     }
