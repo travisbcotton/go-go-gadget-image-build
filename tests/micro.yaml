@@ -4,10 +4,13 @@ arch: ['x86_64', 'noarch', 'i686']
 repos:
   - id: 'Rocky Base'
     url: 'https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/'
+    gpg: https://dl.rockylinux.org/pub/rocky/RPM-GPG-KEY-rockyofficial
   - id: 'Rocky Appstream'
     url: 'https://download.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/'
+    gpgcheck: 0
   - id: 'Rocky CRB'
     url: 'https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os'
+    gpgcheck: 0
 
 packages:
   - filesystem
