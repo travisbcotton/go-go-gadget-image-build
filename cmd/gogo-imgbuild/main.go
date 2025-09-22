@@ -119,10 +119,14 @@ func main() {
         panic(err)
     }
 
-    fmt.Println("Unmounting Contianer")
+    fmt.Println("Unmounting Container")
     if err := builder.Unmount(); err != nil {
 		log.Printf("unmount warning: %v", err)
 	}
+
+    _ = runInContainer(ctx, builder, []string{"rpm", "--initdb"})
+    _ = runInContainer(ctx, builder, []string{"update-ca-trust"})
+    _ = runInContainer(ctx, builder, []string{"microdnf", "install", "dnf"})
 
     imageName := "localhost/custom-base:latest"
     dest, err := storageRef.Transport.ParseStoreReference(store, imageName)
