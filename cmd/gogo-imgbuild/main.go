@@ -128,7 +128,7 @@ func main() {
     if len(cfg.Cmds) > 0 {
         fmt.Println("Running commands")
         for _, c := range(cfg.Cmds) {
-            _ = runInContainer(builder, []string{"bash", "-lc", c})
+            _ = runInContainer(builder, c)
         }
     }
 

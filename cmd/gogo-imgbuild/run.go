@@ -7,16 +7,24 @@ import (
 	"github.com/containers/buildah/define"
 )
 
-func runInContainer(b *buildah.Builder, argv []string) error {
-	opts := buildah.RunOptions{
-		// chroot isolation keeps it simple (no runc/netavark needed)
-		Isolation: define.IsolationChroot,
+func runInContainer(b *buildah.Builder, script string) (string, string, error) {
+    var out, errb bytes.Buffer
 
-		// Wire stdio so you see output / can interact
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-		Stdin:  os.Stdin,
+    opts := buildah.RunOptions{
+        Isolation:     define.IsolationChroot,
+        NetworkPolicy: define.NetworkDefault,
+        Stdout:        &out,
+        Stderr:        &errb,
+        Env: map[string]string{
+            "PATH":      "/usr/sbin:/usr/bin:/sbin:/bin",
+            "HOME":      "/root",
+            "TMPDIR":    "/var/tmp",
+            "container": "oci",
+            "TERM":      "xterm-256color",
+        },
+    }
 
-	}
-	return b.Run(argv, opts)
+    argv := []string{"/bin/sh", "-lc", script}
+    err := b.Run(ctx, argv, opts)
+    return out.String(), errb.String(), err
 }
