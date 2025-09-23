@@ -105,3 +105,12 @@ packages:
   - dbus-libs
   - systemd-libs
   - lz4-libs
+
+cmds:
+  - |
+      rpm --initdb
+      update-ca-trust
+      mkdir -p /etc/rpm
+      printf '%%_netsharedpath /dev:/proc:/sys:/run\n' >/etc/rpm/macros
+      rpm --eval '%{_netsharedpath}'
+      microdnf -y install filesystem
