@@ -25,6 +25,6 @@ func runInContainer(b *buildah.Builder, script string) (string, string, error) {
     }
 
     argv := []string{"/bin/sh", "-lc", script}
-    err := b.Run(ctx, argv, opts)
+    err := b.Run(argv, opts)
     return out.String(), errb.String(), err
 }
