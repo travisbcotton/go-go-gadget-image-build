@@ -8,7 +8,7 @@ import (
 	"github.com/containers/buildah/define"
 )
 
-func runInContainer(ctx context.Context, b *buildah.Builder, argv []string) error {
+func runInContainer(b *buildah.Builder, argv []string) error {
 	opts := buildah.RunOptions{
 		// chroot isolation keeps it simple (no runc/netavark needed)
 		Isolation: define.IsolationChroot,
@@ -19,5 +19,5 @@ func runInContainer(ctx context.Context, b *buildah.Builder, argv []string) erro
 		Stdin:  os.Stdin,
 
 	}
-	return b.Run(ctx, argv, opts)
+	return b.Run(argv, opts)
 }
