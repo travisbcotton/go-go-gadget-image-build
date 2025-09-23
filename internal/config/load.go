@@ -35,7 +35,7 @@ func applyDefaults(c *Config) {
 	}
     for i := range c.Repos {
         if c.Repos[i].GPGCheck == nil {
-    	    c.Repos[i].GPGCheck = Ptr(1) // persists
+    	    c.Repos[i].GPGCheck = Ptr(1)
         }
 	}
 }

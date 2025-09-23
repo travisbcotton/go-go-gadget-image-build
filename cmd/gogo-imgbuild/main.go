@@ -124,9 +124,13 @@ func main() {
 		log.Printf("unmount warning: %v", err)
 	}
 
-    _ = runInContainer(builder, []string{"rpm", "--initdb"})
-    _ = runInContainer(builder, []string{"update-ca-trust"})
-    _ = runInContainer(builder, []string{"microdnf", "install", "dnf"})
+    //Run commands in container
+    if len(cfg.Cmds) > 0 {
+        fmt.Println("Running commands")
+        for _, c := range(cfg.Cmds) {
+            _ = runInContainer(builder, []string{"bash", "-lc", c})
+        }
+    }
 
     imageName := "localhost/custom-base:latest"
     dest, err := storageRef.Transport.ParseStoreReference(store, imageName)
