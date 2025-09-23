@@ -15,11 +15,11 @@ func runInContainer(b *buildah.Builder, script string) (string, string, error) {
         Stdout:        &out,
         Stderr:        &errb,
         Env: []string{
-            "PATH":      "/usr/sbin:/usr/bin:/sbin:/bin",
-            "HOME":      "/root",
-            "TMPDIR":    "/var/tmp",
-            "container": "oci",
-            "TERM":      "xterm-256color",
+            "PATH=/usr/sbin:/usr/bin:/sbin:/bin",
+            "HOME=/root",
+            "TMPDIR=/var/tmp",
+            "container=oci",
+            "TERM=xterm-256color",
         },
     }
 
