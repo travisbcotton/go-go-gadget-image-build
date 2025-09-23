@@ -1,7 +1,7 @@
 package main
 
 import (
-	"os"
+	"bytes"
 
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
@@ -12,10 +12,9 @@ func runInContainer(b *buildah.Builder, script string) (string, string, error) {
 
     opts := buildah.RunOptions{
         Isolation:     define.IsolationChroot,
-        NetworkPolicy: define.NetworkDefault,
         Stdout:        &out,
         Stderr:        &errb,
-        Env: map[string]string{
+        Env: []string{
             "PATH":      "/usr/sbin:/usr/bin:/sbin:/bin",
             "HOME":      "/root",
             "TMPDIR":    "/var/tmp",
