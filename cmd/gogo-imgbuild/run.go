@@ -2,17 +2,19 @@ package main
 
 import (
 	"bytes"
+	"os"
 
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
 )
 
-func runInContainer(b *buildah.Builder, script string) (string, string, error) {
-    var out, errb bytes.Buffer
+func runInContainer(b *buildah.Builder, script string) (string, error) {
+    var errb bytes.Buffer
 
     opts := buildah.RunOptions{
         Isolation:     define.IsolationChroot,
-        Stdout:        &out,
+		Stdin:		   os.Stdin,
+        Stdout:        os.Stdout,
         Stderr:        &errb,
         Env: []string{
             "PATH=/usr/sbin:/usr/bin:/sbin:/bin",
@@ -25,5 +27,5 @@ func runInContainer(b *buildah.Builder, script string) (string, string, error) {
 
     argv := []string{"/bin/sh", "-lc", script}
     err := b.Run(argv, opts)
-    return out.String(), errb.String(), err
+    return errb.String(), err
 }

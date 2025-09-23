@@ -128,7 +128,7 @@ func main() {
     if len(cfg.Cmds) > 0 {
         fmt.Println("Running commands")
         for _, c := range(cfg.Cmds) {
-            _, errOut, err := runInContainer(builder, c)
+            errOut, err := runInContainer(builder, c)
             if err != nil {
                 fmt.Println(errOut)
             }
