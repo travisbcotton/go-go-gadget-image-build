@@ -2,9 +2,6 @@ package main
 
 import (
     "fmt"
-    "os"
-    "path/filepath"
-    "strconv"
 
     storage "github.com/containers/storage"
 )
