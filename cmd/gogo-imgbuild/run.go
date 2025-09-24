@@ -20,8 +20,11 @@ func runInContainer(b *buildah.Builder, script string) (string, error) {
             "PATH=/usr/sbin:/usr/bin:/sbin:/bin",
             "HOME=/root",
             "TMPDIR=/var/tmp",
-            "container=oci",
             "TERM=xterm-256color",
+        },
+		AddCapabilities: []string{
+        "CAP_CHOWN","CAP_DAC_OVERRIDE","CAP_FOWNER","CAP_FSETID","CAP_KILL",
+        "CAP_NET_BIND_SERVICE","CAP_SETFCAP","CAP_SETGID","CAP_SETPCAP","CAP_SETUID","CAP_SYS_CHROOT",
         },
     }
 

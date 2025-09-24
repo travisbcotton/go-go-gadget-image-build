@@ -117,5 +117,19 @@ func InstallRPMs(rpms []string, dest string) error {
 			return fmt.Errorf("extract %s: %w", r ,err)
 		}
 	}
+    cmd := exec.Command(
+            "bash",
+            "-lc",
+            "rpm -Uvh --justdb --nodeps --noscripts --notriggers --nodocs --root " + dest + " ./rpms/*",
+    )
+    cmd.Stderr = os.Stderr
+    _, err := cmd.StdoutPipe()
+    if err != nil {
+            return err
+    }
+    if err := cmd.Start(); err != nil {
+            return err
+    }
+    defer func() { _ = cmd.Wait() }()
 	return nil
 }

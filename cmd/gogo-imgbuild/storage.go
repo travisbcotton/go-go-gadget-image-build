@@ -10,24 +10,15 @@ import (
 )
 
 func openStore() (storage.Store, error) {
-    opts, err := storage.DefaultStoreOptions() // <- correct helper in v1.59.x
+    opts, err := storage.DefaultStoreOptions()
     if err != nil {
         return nil, fmt.Errorf("default store opts: %w", err)
     }
 
-    // Tweak for rootless (optional but helpful)
-    if os.Geteuid() != 0 {
-        uid := os.Geteuid()
-        runRoot := filepath.Join("/run/user", strconv.Itoa(uid))
-        home, _ := os.UserHomeDir()
-        graphRoot := filepath.Join(home, ".local/share/containers/storage")
-
-        opts.RunRoot = runRoot
-        opts.GraphRoot = graphRoot
-        if opts.GraphDriverName == "" {
-            opts.GraphDriverName = "overlay"
-        }
-    }
+    opts.GraphRoot = "/home/builder/.local/share/containers/storage"
+    opts.RunRoot = "/var/tmp/storage-run-1000/containers"
+    opts.GraphDriverName = "overlay"
+	opts.RootlessStoragePath = ""
 
     return storage.GetStore(opts)
 }

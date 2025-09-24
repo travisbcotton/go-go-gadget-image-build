@@ -40,7 +40,6 @@ func main() {
     if err != nil { log.Fatalf("mount: %v", err) }
     fmt.Println("Mounted at:", mountPoint)
     rootfs := mountPoint
-    //_ = runCommandInChroot(rootfs, "rpm", "--initdb")
 
     // load config file
     cfg, err := config.Load(*cfgPath)
@@ -129,6 +128,7 @@ func main() {
         fmt.Println("Running commands")
         for _, c := range(cfg.Cmds) {
             errOut, err := runInContainer(builder, c)
+            fmt.Println(errOut)
             if err != nil {
                 fmt.Println(errOut)
             }
