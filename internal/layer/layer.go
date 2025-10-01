@@ -24,8 +24,12 @@ type Layer struct {
 	Store   storage.Store
 }
 
-func NewLayer(name string, store storage.Store, parent string) (*Layer, error) {
+func NewLayer(name string, parent string) (*Layer, error) {
 	ctx := context.Background()
+	store, err := openStore()
+	if err != nil {
+		log.Fatal(err)
+	}
 	builder, err := buildah.NewBuilder(ctx, store, buildah.BuilderOptions{
 		FromImage: parent,
 	})
@@ -176,4 +180,19 @@ func installIntoScratch(repos []bootstrap.Repo, packages bootstrap.Package, root
 
 func installIntoExisting() error {
 	return nil
+}
+
+func openStore() (storage.Store, error) {
+	opts, err := storage.DefaultStoreOptions()
+	if err != nil {
+		log.Fatalf("default store opts: %v", err)
+		return nil, err
+	}
+
+	opts.GraphRoot = "/home/builder/.local/share/containers/storage"
+	opts.RunRoot = "/var/tmp/storage-run-1000/containers"
+	opts.GraphDriverName = "overlay"
+	opts.RootlessStoragePath = ""
+
+	return storage.GetStore(opts)
 }

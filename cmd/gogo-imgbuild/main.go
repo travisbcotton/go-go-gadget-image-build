@@ -33,17 +33,13 @@ func main() {
 	}
 
 	bctx := context.Background()
-	store, err := openStore()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer store.Shutdown(false)
 
-	builder, err := layer.NewLayer(cfg.Opts.Name, store, cfg.Opts.Parent)
+	builder, err := layer.NewLayer(cfg.Opts.Name, cfg.Opts.Parent)
 	if err != nil {
 		log.Fatalf("new builder: %v", err)
 	}
 	defer func() { _ = builder.Builder.Delete() }()
+	defer builder.Store.Shutdown(false)
 
 	err = builder.BuildLayer(*cfg)
 	if err != nil {
@@ -52,7 +48,7 @@ func main() {
 	}
 
 	imageName := cfg.Opts.Name
-	dest, err := storageRef.Transport.ParseStoreReference(store, imageName)
+	dest, err := storageRef.Transport.ParseStoreReference(builder.Store, imageName)
 	if err != nil {
 		panic(err)
 	}
