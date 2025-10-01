@@ -1,9 +1,9 @@
 package config
 
 import (
-	"os"
-	"fmt"
 	"errors"
+	"fmt"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
@@ -33,10 +33,13 @@ func applyDefaults(c *Config) {
 	if c.Arch == nil {
 		c.Arch = []string{"x86_64", "noarch"}
 	}
-    for i := range c.Repos {
-        if c.Repos[i].GPGCheck == nil {
-    	    c.Repos[i].GPGCheck = Ptr(1)
-        }
+	for i := range c.Repos {
+		if c.Repos[i].GPGCheck == nil {
+			c.Repos[i].GPGCheck = Ptr(1)
+		}
+	}
+	if c.Opts.Parent == "" {
+		c.Opts.Parent = "scratch"
 	}
 }
 
