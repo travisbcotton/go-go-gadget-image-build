@@ -1,27 +1,27 @@
 package rpm
 
 import (
-	"io"
-	"path/filepath"
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"bufio"
+	"path/filepath"
 	"strings"
 
 	"github.com/cavaliergopher/cpio"
 )
 
 const (
-    cpioModeTypeMask = 0170000
-    cpioModeDir      = 0040000
-    cpioModeReg      = 0100000
-    cpioModeSymlink  = 0120000
-    cpioModeChar     = 0020000
-    cpioModeBlock    = 0060000
-    cpioModeFIFO     = 0010000
-    cpioModeSocket   = 0140000
+	cpioModeTypeMask = 0170000
+	cpioModeDir      = 0040000
+	cpioModeReg      = 0100000
+	cpioModeSymlink  = 0120000
+	cpioModeChar     = 0020000
+	cpioModeBlock    = 0060000
+	cpioModeFIFO     = 0010000
+	cpioModeSocket   = 0140000
 )
 
 func ExtractCPIOStream(r io.Reader, dest string) error {
@@ -45,7 +45,7 @@ func ExtractCPIOStream(r io.Reader, dest string) error {
 		for strings.HasPrefix(name, "./") {
 			name = strings.TrimPrefix(name, "./")
 		}
-		name = strings.TrimLeft(name,"/")
+		name = strings.TrimLeft(name, "/")
 
 		target := filepath.Join(dest, filepath.Clean(name))
 		if !strings.HasPrefix(target, dest+string(os.PathSeparator)) && target != dest {
@@ -88,9 +88,13 @@ func ExtractCPIOStream(r io.Reader, dest string) error {
 				return err
 			}
 		case cpioModeFIFO, cpioModeChar, cpioModeBlock, cpioModeSocket:
-			if _, err := io.Copy(io.Discard, cr); err != nil { return err }
+			if _, err := io.Copy(io.Discard, cr); err != nil {
+				return err
+			}
 		default:
-			if _, err := io.Copy(io.Discard, cr); err != nil { return err }
+			if _, err := io.Copy(io.Discard, cr); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -114,22 +118,22 @@ func InstallRPMs(rpms []string, dest string) error {
 		fmt.Println("Extracting ", r)
 		err := ExtractRPM(r, dest)
 		if err != nil {
-			return fmt.Errorf("extract %s: %w", r ,err)
+			return fmt.Errorf("extract %s: %w", r, err)
 		}
 	}
-    cmd := exec.Command(
-            "bash",
-            "-lc",
-            "rpm -Uvh --justdb --nodeps --noscripts --notriggers --nodocs --root " + dest + " ./rpms/*",
-    )
-    cmd.Stderr = os.Stderr
-    _, err := cmd.StdoutPipe()
-    if err != nil {
-            return err
-    }
-    if err := cmd.Start(); err != nil {
-            return err
-    }
-    defer func() { _ = cmd.Wait() }()
+	cmd := exec.Command(
+		"bash",
+		"-lc",
+		"rpm -Uvh --justdb --nodeps --noscripts --notriggers --nodocs --root "+dest+" ./rpms/*",
+	)
+	cmd.Stderr = os.Stderr
+	_, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	defer func() { _ = cmd.Wait() }()
 	return nil
 }

@@ -1,6 +1,10 @@
 ---
 arch: ['x86_64', 'noarch', 'i686']
 
+options:
+  name: test-dnf
+  parent: scratch
+
 repos:
   - id: 'Rocky Base'
     url: 'https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/'
@@ -113,8 +117,5 @@ cmds:
   - |
       rpm --initdb
       update-ca-trust
-      mkdir -p /etc/rpm
-      printf '%%_netsharedpath /dev:/proc:/sys:/run\n' >/etc/rpm/macros
-      rpm --eval '%{_netsharedpath}'
       microdnf -y install dnf
       
