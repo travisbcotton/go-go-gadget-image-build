@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/containers/buildah"
@@ -65,28 +66,33 @@ func (b *Layer) BuildLayer(config config.Config) error {
 	//Set arch
 	arch := config.Arch
 
+	//Mount Container
+	rootfs, err := b.Builder.Mount("")
+	if err != nil {
+		log.Fatalf("mount: %v", err)
+		return err
+	}
+	log.Printf("Mounted at:", rootfs)
+
 	// change behavior if importing from scratch
 	if config.Opts.Parent == "scratch" {
-		//Mount Container
-		rootfs, err := b.Builder.Mount("")
-		if err != nil {
-			log.Fatalf("mount: %v", err)
-			return err
-		}
-		log.Printf("Mounted at:", rootfs)
+
 		err = installIntoScratch(repos, pkgs, rootfs, arch)
 		if err != nil {
 			log.Fatalf("Failed to create layer from scratch %v", err)
 		}
-		log.Println("Unmounting Container")
-		if err := b.Builder.Unmount(); err != nil {
-			log.Printf("unmount warning: %v", err)
-		}
+
 	} else {
-		err := installIntoExisting()
+		install_cmd, err := installIntoExisting(repos, pkgs, rootfs)
 		if err != nil {
 			log.Fatalf("Failed to create layer from parent %v", err)
 		}
+		b.RunInContainer(install_cmd)
+	}
+
+	log.Println("Unmounting Container")
+	if err := b.Builder.Unmount(); err != nil {
+		log.Printf("unmount warning: %v", err)
 	}
 
 	//Run commands in container
@@ -178,8 +184,19 @@ func installIntoScratch(repos []bootstrap.Repo, packages bootstrap.Package, root
 	return nil
 }
 
-func installIntoExisting() error {
-	return nil
+func installIntoExisting(repos []bootstrap.Repo, packages bootstrap.Package, rootfs string) (string, error) {
+	//Write repos to /etc/yum.repos.d/gogo-imgbuild.repo
+	if len(repos) > 0 {
+		err := rpm.WriteRepos(rootfs, repos)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	//Install using builtin package manager
+	//TODO auto discover the package manger
+	install_cmd := "dnf install" + strings.Join(packages.Raw, " ")
+	return install_cmd, nil
 }
 
 func openStore() (storage.Store, error) {
