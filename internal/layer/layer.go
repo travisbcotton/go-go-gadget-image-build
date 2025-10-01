@@ -186,9 +186,11 @@ func installIntoScratch(repos []bootstrap.Repo, packages bootstrap.Package, root
 
 func installIntoExisting(repos []bootstrap.Repo, packages bootstrap.Package, rootfs string) (string, error) {
 	//Write repos to /etc/yum.repos.d/gogo-imgbuild.repo
-	err := rpm.WriteRepos(rootfs, repos)
-	if err != nil {
-		return "", err
+	if len(repos) > 0 {
+		err := rpm.WriteRepos(rootfs, repos)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	//Install using builtin package manager
