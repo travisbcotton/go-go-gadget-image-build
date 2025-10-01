@@ -1,21 +1,21 @@
 package rpm
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"errors"
 
 	"github.com/travisbcotton/go-go-gadget-image-build/pkg/bootstrap"
 )
 
 type OSRelease struct {
-	Name        string
-	ID          string
-	VersionID   string
-	PrettyName  string
-	Version     string
+	Name       string
+	ID         string
+	VersionID  string
+	PrettyName string
+	Version    string
 }
 
 func WriteOSRelease(rootfs string, r OSRelease) error {
@@ -24,7 +24,6 @@ func WriteOSRelease(rootfs string, r OSRelease) error {
 		return err
 	}
 
-	// Build minimal content; quote values as per spec.
 	pretty := r.PrettyName
 	if pretty == "" {
 		pretty = r.Name + " " + r.VersionID
@@ -42,18 +41,13 @@ func WriteOSRelease(rootfs string, r OSRelease) error {
 		return err
 	}
 
-	// Many distros have /etc/os-release -> /usr/lib/os-release or vice versa.
-	// To be robust, ensure /usr/lib exists and create a symlink there pointing to /etc/os-release.
 	usrLib := filepath.Join(rootfs, "usr", "lib")
 	if err := os.MkdirAll(usrLib, 0o755); err != nil {
 		return err
 	}
 	libPath := filepath.Join(usrLib, "os-release")
-	_ = os.Remove(libPath) // replace if exists
+	_ = os.Remove(libPath)
 	if err := os.Symlink("/etc/os-release", libPath); err != nil {
-		// If symlinks aren’t desired, you could copy instead:
-		// _ = copyFile(etcPath, libPath)
-		// but usually the symlink is fine.
 		return err
 	}
 	return nil

@@ -44,7 +44,7 @@ func applyDefaults(c *Config) {
 }
 
 func validate(c *Config) error {
-	if len(c.Repos) == 0 {
+	if len(c.Repos) == 0 && c.Opts.Parent == "scratch" {
 		return errors.New("at least one repo is required")
 	}
 	for _, r := range c.Repos {

@@ -8,12 +8,13 @@ type Repo struct {
 }
 
 type Opt struct {
+	Name   string `yaml:"name"`
 	Parent string `yaml:"parent"`
 }
 
 type Config struct {
-	Repos    []Repo `yaml:"repos"`
-	Opts     Opt
+	Repos    []Repo   `yaml:"repos"`
+	Opts     Opt      `yaml:"options"`
 	Packages []string `yaml:"packages"`
 	Arch     []string `yaml:"arch"`
 	Cmds     []string `yaml:"cmds"`
